@@ -27,7 +27,7 @@ model_lists = ['gpt', 'sam', 'vrp_qformer_sam', 'vrp_sam', 'vrp_sam_mul',
                'vrp_sam_prompt_concat_reweight', 'vrp_sam_prompt_concat_ave_feat_reweight', 
                'vrp_sam_counterfactual', 'vrp_sam_deepcut_graph', 'vrp_sam_non_learning', 
                'vrp_sam_sagp', 'vrp_sam_mlp_abs_reweight', 'vrp_sam_sigma', 
-               'vrp_sam_res_hypergraph_cross_attn', 'vrp_sam_graph_degrad_contrasive', 
+               'vrp_sam_res_hypergraph_cross_attn', 'vrp_sam_graph_degrad_contrastive', 
                'vrp_sam_res_hypergraph', 'vrp_sam_graphcl_aug', 'vrp_sam_dino_bg', 
                'vrp_sam_dino_vitdet_fpn', 'vrp_sam_dino_vitdet_fpn_deepcut_graph', 
                'vrp_sam_dino_vitdet_fpn_deepcut_graph_bg_query', 'vrp_sam_dino_uncertainty_graph',
@@ -39,11 +39,11 @@ model_lists = ['gpt', 'sam', 'vrp_qformer_sam', 'vrp_sam', 'vrp_sam_mul',
 
 data_lists = ['CVF', 'inpaint', 'color', 'caption', 'vp', 'seg', 'seg_class', 'sam_seg', 
               'sam_seg_imgiter', 'sam_seg_degrad_aug', 'sam_seg_cf', 'sam_seg_coconut', 
-              'sam_seg_degrad_contrasive', 'sam_seg_imgiter_degrad_contrasive', 'fss', 
+              'sam_seg_degrad_contrastive', 'sam_seg_imgiter_degrad_contrastive', 'fss', 
               'mix_seg_vp', 'mix_seg_corrupt', 'vg', 'calibrate_vg', 'vg_bbox_text', 
               'vg_class', 'seg_vg', 'mix_seg_vg', 'mix_seg_vg-seg', 'sam_seg_cls', 
               'sam_seg_unoverlap', 'clip', 'cosine', 'degrad', 'scale', 
-              'sam_seg_semantic_degrad_contrasive', 'fss1000', 'lvis']
+              'sam_seg_semantic_degrad_contrastive', 'fss1000', 'lvis']
 
 def add_model_config_args(parser):
     """Model arguments"""

@@ -101,7 +101,7 @@ if __name__ == "__main__":
         #     IoUs.append(bjaccard(torch.from_numpy(seg_re_masks[i]), torch.from_numpy(seg_gt_masks[i])))
         
         # import pickle
-        # pickle.dump(torch.stack(IoUs), file=open('/home/dmsheng/code/visual_prompting/analysis/iou/dinov2_large_deepcut_graph_cluster10_kmeans_ce_loss_miou.pkl', 'wb+'))
+        # pickle.dump(torch.stack(IoUs), file=open('/home/qchugroup/sdmcvpr2025/code/visual_prompting/analysis/iou/dinov2_large_deepcut_graph_cluster10_kmeans_ce_loss_miou.pkl', 'wb+'))
 
         # import pdb; pdb.set_trace()
 

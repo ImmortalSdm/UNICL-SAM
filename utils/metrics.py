@@ -406,9 +406,9 @@ def eval():
     print('Done!!!')
 
 if __name__ == '__main__':
-    gt_save_path = '/home/dmsheng/code/try/Evaluation-on-salient-object-detection/gt/coco'
-    q_gt_save_path = '/home/dmsheng/code/try/Evaluation-on-salient-object-detection/pred/q_gt/coco'
-    r_save_path = '/home/dmsheng/code/try/Evaluation-on-salient-object-detection/pred/re/coco'
+    gt_save_path = '/home/qchugroup/sdmcvpr2025/code/try/Evaluation-on-salient-object-detection/gt/coco'
+    q_gt_save_path = '/home/qchugroup/sdmcvpr2025/code/try/Evaluation-on-salient-object-detection/pred/q_gt/coco'
+    r_save_path = '/home/qchugroup/sdmcvpr2025/code/try/Evaluation-on-salient-object-detection/pred/re/coco'
     
     seg_gt_masks = np.ones((25, 128, 128))*255
     seg_q_gt_masks = np.ones((25, 128, 128))*255

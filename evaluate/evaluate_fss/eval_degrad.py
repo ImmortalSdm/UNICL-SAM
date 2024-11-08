@@ -37,12 +37,12 @@ def get_args():
 
 if __name__ == "__main__":
     config = get_args()
-    # ann_path = '/home/dmsheng/datasets/coco/annotations/val_gtav_seg_3w.json'
-    ann_path = '/home/dmsheng/datasets/coco/annotations/val_sd_context_seg_3w.json'
+    # ann_path = '/home/qchugroup/sdmcvpr2025/datasets/coco/annotations/val_gtav_seg_3w.json'
+    ann_path = '/home/qchugroup/sdmcvpr2025/datasets/coco/annotations/val_sd_context_seg_3w.json'
     with open(ann_path,'r') as fr: 
         sd_json = json.load(fr) 
 
-    with open('/home/dmsheng/datasets/coco/annotations/val_seg_3w.json','r') as fr: 
+    with open('/home/qchugroup/sdmcvpr2025/datasets/coco/annotations/val_seg_3w.json','r') as fr: 
         coco_json = json.load(fr) 
 
     cats = [int(k) for k,v in sd_json['per_cat_pool'].items() if len(v) > 0]

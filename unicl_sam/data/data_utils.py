@@ -715,10 +715,10 @@ def value2key(data_dict, data):
     return list(data_dict.keys())[list(data_dict.values()).index(data)]
 
 def get_context_anno():
-    imgs = sorted(list(glob('/home/dmsheng/datasets/sd_context/image/*', recursive=True)))
-    masks = sorted(list(glob('/home/dmsheng/datasets/sd_context/heatmap/*.png', recursive=True)))
+    imgs = sorted(list(glob('/home/qchugroup/sdmcvpr2025/datasets/sd_context/image/*', recursive=True)))
+    masks = sorted(list(glob('/home/qchugroup/sdmcvpr2025/datasets/sd_context/heatmap/*.png', recursive=True)))
 
-    coco_json = "/home/dmsheng/datasets/coco/annotations/val_seg_3w.json"
+    coco_json = "/home/qchugroup/sdmcvpr2025/datasets/coco/annotations/val_seg_3w.json"
     import json
     with open(coco_json,'r') as fr: 
         coco_json = json.load(fr) 
@@ -749,7 +749,7 @@ def get_context_anno():
     annos['dataset_dicts'] = dataset_dicts
     annos['per_cat_pool'] = per_cat_pool
 
-    with open('/home/dmsheng/datasets/coco/annotations/val_sd_context_seg_3w.json', 'w', encoding='utf-8') as f:
+    with open('/home/qchugroup/sdmcvpr2025/datasets/coco/annotations/val_sd_context_seg_3w.json', 'w', encoding='utf-8') as f:
         json.dump(annos, f, ensure_ascii=False)
 
 def top_k_top_p_filtering(logits: torch.Tensor, top_k: int = 0, top_p: float = 0.0,

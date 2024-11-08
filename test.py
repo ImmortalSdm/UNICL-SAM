@@ -10,8 +10,6 @@ import cv2
 import torch
 from pathlib import Path
 
-from torchvision import datasets
-from torchmetrics.classification import BinaryJaccardIndex
 from omegaconf import OmegaConf
 import torchvision.transforms as transforms
 from torchvision.utils import save_image, make_grid
@@ -157,7 +155,7 @@ def generate_sam_img(model, data, device, num, args):
         mask_img = torch.clip(transform(gt).detach().repeat(1,3,1,1).cpu(), 0, 1)
         masked_gt = refer_img*mask_img + 0.2*(refer_img*(1-mask_img))
         pm_canvas = torch.cat([(masked_gt)/255, transform(normal(result_img.detach().cpu().repeat(1,3,1,1)))], dim=-2)
-        save_image(pm_canvas, f'analysis/pseudo_mask/vrp_sam_dinov2_large_random_concat_contrasive/{num}.png', normalize=True, cmap='jet', scale_each=True)
+        save_image(pm_canvas, f'analysis/pseudo_mask/vrp_sam_dinov2_large_random_concat_contrastive/{num}.png', normalize=True, cmap='jet', scale_each=True)
 
     result_img = torch.stack([torch.clip(r*255, 0, 255).repeat(3, 1, 1) for r in result_img])
     B, C, H, W = result_img.shape
@@ -215,11 +213,11 @@ def get_test_dataset(args):
             transforms.Resize((args.input_size, args.input_size)),
             transforms.Grayscale(3),
             transforms.ToTensor()])
-        val_file = "/home/dmsheng/datasets/coco/annotations/val_seg_3w.json"
-        # val_file = "/home/dmsheng/datasets/coco/annotations/val_seg_no_small_3w.json"
-        # val_file = "/home/dmsheng/datasets/coco/annotations/val_gtav_seg_3w.json"
-        # val_file = "/home/dmsheng/datasets/coco/annotations/val_sd_context_seg_3w.json"
-        # val_file = "/home/dmsheng/datasets/coco/annotations/val_sd_coco_seg_3w.json"
+        val_file = "/home/qchugroup/sdmcvpr2025/datasets/coco/annotations/val_seg_3w.json"
+        # val_file = "/home/qchugroup/sdmcvpr2025/datasets/coco/annotations/val_seg_no_small_3w.json"
+        # val_file = "/home/qchugroup/sdmcvpr2025/datasets/coco/annotations/val_gtav_seg_3w.json"
+        # val_file = "/home/qchugroup/sdmcvpr2025/datasets/coco/annotations/val_sd_context_seg_3w.json"
+        # val_file = "/home/qchugroup/sdmcvpr2025/datasets/coco/annotations/val_sd_coco_seg_3w.json"
         dataset_val = SAMSegDataset(COCO_ROOT_VAL, val_file, transform=image_transform, target_transform=mask_transform, num_samples=args.samples_num, size=args.input_size, mode='test', test_ids=args.test_ids)
         # dataset_val = SAMSegGenerationDataset(COCO_ROOT_VAL, val_file, transform=image_transform, target_transform=mask_transform, num_samples=args.samples_num, size=args.input_size)
     elif args.data_type == 'lvis':
@@ -230,7 +228,7 @@ def get_test_dataset(args):
             transforms.Resize((args.input_size, args.input_size)),
             transforms.Grayscale(3),
             transforms.ToTensor()])
-        val_file = "/home/dmsheng/datasets/coco/annotations/lvis_img100_seg_train.json"
+        val_file = "/home/qchugroup/sdmcvpr2025/datasets/coco/annotations/lvis_img100_seg_train.json"
         dataset_val = SAMSegLVISDataset(LVIS_ROOT, LVIS_SEG_ANN_VAL, transform=image_transform, target_transform=mask_transform, num_samples=args.samples_num, size=args.input_size, fold=args.split, is_train=False)  
     elif args.data_type in ['fss', 'mix_fss']:
         image_transform = transforms.Compose([
@@ -240,10 +238,10 @@ def get_test_dataset(args):
             transforms.Resize((args.input_size, args.input_size)),
             transforms.Grayscale(3),
             transforms.ToTensor()])
-        # dataset_val = MyFSSCOCOFDataset(split=args.split, shot=args.samples_num, data_set='coco', base_data_root='/home/dmsheng/datasets/coco', 
+        # dataset_val = MyFSSCOCOFDataset(split=args.split, shot=args.samples_num, data_set='coco', base_data_root='/home/qchugroup/sdmcvpr2025/datasets/coco', 
         #                                 use_split_coco=True, transform=image_transform, target_transform=mask_transform, 
         #                                 mode='val')
-        dataset_val = FSSCOCODataset(datapath='/home/dmsheng/datasets/coco', fold=args.split, split='test', shot=args.samples_num, transform=image_transform, target_transform=mask_transform)
+        dataset_val = FSSCOCODataset(datapath='/home/qchugroup/sdmcvpr2025/datasets/coco', fold=args.split, split='test', shot=args.samples_num, transform=image_transform, target_transform=mask_transform)
     elif args.data_type in ['fss1000']:
         image_transform = transforms.Compose([
             transforms.Resize((args.input_size, args.input_size)),
@@ -252,8 +250,8 @@ def get_test_dataset(args):
             transforms.Resize((args.input_size, args.input_size)),
             transforms.Grayscale(3),
             transforms.ToTensor()])
-        # dataset_val = FSS1000Dataset(shot=args.samples_num, size=args.input_size, base_data_root='/home/dmsheng/datasets/fss-1000', transform=image_transform, target_transform=mask_transform)
-        dataset_val = FSS1000Dataset(base_data_root='/home/dmsheng/datasets/fss-1000', transform=image_transform, target_transform=mask_transform)
+        # dataset_val = FSS1000Dataset(shot=args.samples_num, size=args.input_size, base_data_root='/home/qchugroup/sdmcvpr2025/datasets/fss-1000', transform=image_transform, target_transform=mask_transform)
+        dataset_val = FSS1000Dataset(base_data_root='/home/qchugroup/sdmcvpr2025/datasets/fss-1000', transform=image_transform, target_transform=mask_transform)
     else:
         raise TypeError
 
@@ -270,7 +268,7 @@ def get_args_parser():
     parser.add_argument('-pt', '--ckpt', 
                         default='experiments/ImageGPT/00001-ImageGPT_small_GumbelVQ_inputid_caption-vg-30w-epoch1000-batch64-blr0.0003-res128-samples1-weight/checkpoint-125.pth', type=str)
     parser.add_argument('-val', '--val_path', default='results/train_data', type=str)
-    parser.add_argument('-l', '--val_list', default='/home/dmsheng/datasets/ILSVRC_2012/imagenetcolor_train.txt', type=str)
+    parser.add_argument('-l', '--val_list', default='/home/qchugroup/sdmcvpr2025/datasets/ILSVRC_2012/imagenetcolor_train.txt', type=str)
     parser.add_argument('-b', '--batch_size', default=25, type=int)
 
     parser.add_argument('-d', '--data_type', default='test', type=str, choices=data_lists)
@@ -300,7 +298,7 @@ if __name__ == '__main__':
     set_random_seed(2333)
     torch.set_grad_enabled(False)
 
-    save_path = os.path.join('/mnt/data/homes/dmsheng/icl_seg_results/UNICL_SAM/cvpr2025', args.ckpt.split('/')[-2], args.ckpt.split('/')[-1], args.val_path)
+    save_path = os.path.join('/home/qchugroup/sdmcvpr2025/code/UNICL-SAM/icl_seg_results/cvpr2025', args.ckpt.split('/')[-2], args.ckpt.split('/')[-1], args.val_path)
     if args.category:
         save_path = os.path.join(save_path, args.category + '_sample' + str(args.samples_num))
     if args.obj_size:

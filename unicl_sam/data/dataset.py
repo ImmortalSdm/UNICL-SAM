@@ -4,7 +4,7 @@ import math
 import sys
 import os
 
-sys.path.append(os.getcwd())
+sys.path.append('.')
 
 from glob import glob
 import logging
@@ -28,9 +28,9 @@ from pycocotools.coco import COCO
 from tqdm import tqdm
 from panopticapi.utils import rgb2id
 
-from .data_utils import *
-from .data_setting import *
-from ..model import ResizeLongestSide
+from unicl_sam.data.data_utils import *
+from unicl_sam.data.data_setting import *
+from unicl_sam.model import ResizeLongestSide
 
 logger = logging.getLogger(__name__) # don't ask me why this import works
 
@@ -61,7 +61,7 @@ def get_img_class_mask(coco_api, img_id):
     anns = coco_api.imgToAnns[img_id]
 
     img_path = img_info['file_name']
-    img = cv2.imread(os.path.join(f'/home/dmsheng/datasets/coco/train2017/{img_path}'))
+    img = cv2.imread(os.path.join(f'/home/qchugroup/sdmcvpr2025/datasets/coco/train2017/{img_path}'))
 
     save_path = f'cvpr_pics/test/{img_id}'
     os.makedirs(save_path, exist_ok=True)
@@ -85,7 +85,7 @@ def get_class_mask(coco_api, cat_id):
         img_id = random.choice(cat_ids)
         img_info = coco_api.loadImgs(img_id)[0]
         img_path = img_info['file_name']
-        img = cv2.imread(os.path.join(f'/home/dmsheng/datasets/coco/train2017/{img_path}'))
+        img = cv2.imread(os.path.join(f'/home/qchugroup/sdmcvpr2025/datasets/coco/train2017/{img_path}'))
         cv2.imwrite(f'{save_path}/test_{img_id}.png', img)
 
         anns = coco_api.imgToAnns[img_id]
@@ -312,7 +312,7 @@ def load_coco_seg_json(json_file, image_root, dataset_name=None, extra_annotatio
     # data['dataset_dicts'] = dataset_dicts
     # data['per_cat_pool'] = per_cat_pool
     # # data['per_img_unoverlap_pool'] = part_per_img_unoverlap_pool
-    # with open(os.path.join('/home/dmsheng/datasets/coco/annotations/', "train_seg_35w.json"), 'w', encoding='utf-8') as f:
+    # with open(os.path.join('/home/qchugroup/sdmcvpr2025/datasets/coco/annotations/', "train_seg_35w.json"), 'w', encoding='utf-8') as f:
     #     json.dump(data, f, cls=MyEncoder, ensure_ascii=False)  # , cls=MyEncoder
 
     img_cat_dicts = sorted(img_cat_dicts.items(),key=lambda x:x[1], reverse=True)
@@ -868,7 +868,7 @@ class SAMImgSegDataset(VisionDataset):
     def __len__(self):
         return len(self.img_cat_dicts)
 
-class SAMImgSegContrasiveDataset(VisionDataset):
+class SAMImgSegContrastiveDataset(VisionDataset):
     '''
     iter per image
     '''
@@ -877,6 +877,7 @@ class SAMImgSegContrasiveDataset(VisionDataset):
 
     def __init__(
         self,
+        root,
         transform=None,
         target_transform=None,
         transforms=None,
@@ -888,15 +889,12 @@ class SAMImgSegContrasiveDataset(VisionDataset):
         select_type=None,
         label_select_type=None,
     ):
-        if is_train:
-            root = COCO_ROOT_TRAIN
-            annFile = COCO_SEG_ANN_TRAIN
-        else:
-            root = COCO_ROOT_VAL
-            annFile = COCO_SEG_ANN_VAL
-            
         super().__init__(root, transforms, transform, target_transform)
 
+        if is_train:
+            annFile = COCO_SEG_ANN_TRAIN
+        else:
+            annFile = COCO_SEG_ANN_VAL
 
         self.coco_api, self.img_cat_dicts, self.per_cat_pool = load_coco_img_seg_json(annFile, root)
         self.keys = list(self.img_cat_dicts.keys())
@@ -1123,7 +1121,8 @@ class SAMSegLVISDataset(VisionDataset):
                  fold=None,
                  is_semseg=False, 
                  ext='png', 
-                 is_meta=False):
+                 is_meta=False,
+                 is_contra=False):
         super().__init__(root, transforms, transform, target_transform)
 
         self.dataset_name = dataset_name
@@ -1132,6 +1131,7 @@ class SAMSegLVISDataset(VisionDataset):
         self.is_semseg = is_semseg
         self.is_meta = is_meta
         self.is_train = is_train
+        self.is_contra = is_contra
         self.num_samples = num_samples
         self.img_size = size
         self.fold = fold
@@ -1325,6 +1325,274 @@ class SAMSegLVISDataset(VisionDataset):
             pass
         return sample
 
+class SAMSegLVISContrastiveDataset(VisionDataset):
+    def __init__(self, 
+                 root,
+                 annFile=None,
+                 transform=None,
+                 target_transform=None,
+                 transforms=None,
+                 is_train=True, 
+                 dataset_name='lvis', 
+                 custom_json_path=None,
+                 size=128, 
+                 num_samples=1,
+                 fold=None,
+                 is_semseg=False, 
+                 ext='png', 
+                 label_select_type=None,
+                 is_meta=False,
+                 is_contra=False):
+        super().__init__(root, transforms, transform, target_transform)
+
+        self.dataset_name = dataset_name
+        self.is_lvis = True
+        self.transform = transform
+        self.is_semseg = is_semseg
+        self.is_meta = is_meta
+        self.is_train = is_train
+        self.is_contra = is_contra
+        self.num_samples = num_samples
+        self.img_size = size
+        self.fold = fold
+        self.label_select_type = label_select_type
+        self.sam_transform = ResizeLongestSide(self.img_size)
+        self.output_transform = T.Resize((self.img_size, self.img_size), antialias=True)
+        if annFile is not None:
+            self.img_root = root
+        else:
+            split_json = 'train' if is_train else 'val'
+            annFile = 'annotations/lvis_v1_{}.json'.format(split_json)
+            self.img_root = root
+
+            if custom_json_path is not None :
+                annFile = custom_json_path
+
+        if fold is not None:
+            assert is_train == False
+            assert fold < 10
+
+            with open(os.path.join(root, annFile)) as f:
+                lvis_json = json.load(f)
+                cat_count = defaultdict(set)
+                for info in lvis_json['annotations']:
+                    cat_count[info['category_id']].add(info['image_id'])
+            cats = [x for x,v in cat_count.items() if len(v) > 1]
+            cats = sorted(cats)
+
+            idx = range(fold, len(cats), 10)
+            cats = [cats[x] for x in idx]
+            cats_set = set(cats)
+            new_annotations = [x for x in lvis_json['annotations'] if x['category_id'] in cats_set]
+            new_image_ids = set([x['image_id'] for x in new_annotations])
+            new_images = [x for x in lvis_json['images'] if x['id'] in new_image_ids]
+            lvis_json['annotations'] = new_annotations
+            lvis_json['images'] = new_images
+            with NamedTemporaryFile('w+t') as f:
+                json.dump(lvis_json, f)
+                print('filename is:', f.name)
+                f.flush()
+                self.coco = COCO(
+                    f.name
+                )
+        else :
+            self.coco = COCO(os.path.join(root, annFile))
+
+        ids = list(sorted(self.coco.imgs.keys()))
+        self.ids = []
+        self.max_inst = 1
+
+        self.cid_to_cat = {k:v['name'] for k,v in self.coco.cats.items()}
+        self.cls_to_idx = defaultdict(list)
+        self.class_ids = self.get_class_ids()
+        for idx in tqdm(ids) :
+            if len(self.coco.getAnnIds(idx)):
+                self.ids.append(idx)
+                annos = self.coco.loadAnns(self.coco.getAnnIds(idx))
+                cat_ids = np.array([x['category_id'] for x in annos])
+                uni_cats = np.unique(cat_ids)
+                for cid in uni_cats:
+                    self.cls_to_idx[cid].append(len(self.ids)-1) # append this idx
+
+    def _get_ref_cid(self, cid, index):
+        idx_list = self.cls_to_idx[cid]
+        ref_index = index
+        idx_list = list(set(idx_list) - {index})
+        if len(idx_list) > 1 :
+            ref_index = random.choice(idx_list)
+        return ref_index
+
+    def __len__(self,):
+        if self.fold is not None and not self.is_train:
+            if self.is_lvis:
+                return 2300
+            return max(len(self.ids) * 5, 100)
+        return len(self.ids)
+    
+    def get_class_ids(self,):
+        return np.array(sorted(self.coco.cats.keys()))
+
+    def get_class_names(self,):
+        cls_ids = sorted(self.coco.cats.keys())
+        return [self.coco.cats[x]['name'] for x in cls_ids]
+
+    def mask_transform(self, mask):
+        if isinstance(mask, np.ndarray):
+            if len(mask.shape) == 3:
+                mask = Image.fromarray(np.squeeze(mask, axis=-1))
+            else:
+                mask = Image.fromarray(mask)
+        return torch.LongTensor(np.array(self.output_transform(mask)).astype('int8'))
+
+    def __getitem__(self, index):
+        if self.fold is not None and not self.is_train:
+            index = random.randint(0, len(self.ids) - 1)
+            # self.ids[index]
+        
+        def _get_info(index, cats_list=None, supp=False):
+            idx = self.ids[index]
+            if self.is_lvis:
+                coco_url = self.coco.loadImgs(idx)[0]["coco_url"]
+                image_path = os.path.join(*coco_url.split('/')[-2:])
+            else :
+                image_path = self.coco.loadImgs(idx)[0]["file_name"]
+
+            image = Image.open(os.path.join(self.img_root, image_path)).convert('RGB')
+            annos = self.coco.loadAnns(self.coco.getAnnIds(idx))
+            masks = np.stack([self.coco.annToMask(x) for x in annos])
+            cat_ids = np.array([x['category_id'] for x in annos])
+            uni_cats = np.unique(cat_ids)
+            masks_list = []
+            if cats_list is None :
+                if len(uni_cats) > self.max_inst :
+                    cats_list = np.random.choice(
+                        uni_cats, size=self.max_inst, replace=False
+                    ).tolist()
+                else :
+                    cats_list = uni_cats.tolist()
+
+            for cat in cats_list :
+                masks_list.append(masks[cat_ids==cat].max(0))
+
+            masks = np.stack(masks_list)
+
+            if supp:
+                image = np.array(image)
+                masks = masks.astype(image.dtype)
+
+            return image, np.squeeze(masks), cats_list
+
+        if self.fold is not None and not self.is_train:
+            cats_list = [random.choice(list(self.cls_to_idx.keys()))]
+            index = self._get_ref_cid(cats_list[0], None)
+            image, masks, _ = _get_info(index, cats_list)
+        else:
+            image, masks, cats_list = _get_info(index)
+
+        if self.transforms is not None:
+            image = self.sam_transform.apply_image(np.array(image))
+            image = torch.tensor(image).permute(2, 0, 1)
+            image = self.output_transform(image)
+            masks = self.mask_transform(masks).unsqueeze(0)
+
+        if self.label_select_type == None:
+            label_select_type = random.choice(["bbox", "dilate", "erode", "None"])
+        else:
+            label_select_type = self.label_select_type
+
+        support_imgs, support_masks = [], []
+        support_ctr_imgs, support_ctr_masks = [], []
+        for cid in cats_list:
+            ref_index = self._get_ref_cid(cid, index)
+            image_ref, masks_ref, _ = _get_info(ref_index, [cid], supp=True)
+            image_ref_ctr = deepcopy(image_ref) 
+            masks_ref_ct = deepcopy(masks_ref)
+
+            for i in range(3):
+                try:
+                    temp_img, temp_mask = apply_transform(image_ref_ctr, masks_ref_ct)
+                    temp_mask = (temp_mask > 0).astype(temp_img.dtype)
+                    assert temp_mask.max() > 0
+                    image_ref_ctr, masks_ref_ct = temp_img, temp_mask
+                    break
+                except:
+                    pass
+
+            if self.transforms is not None:
+                image_ref, masks_ref = self.transforms(Image.fromarray(image_ref), Image.fromarray(masks_ref))
+                image_ref_ctr, masks_ref_ct = self.transforms(Image.fromarray(image_ref_ctr), Image.fromarray(masks_ref_ct))
+
+            if label_select_type == 'dilate':
+                masks_ref_ct = dilate(masks_ref_ct, ksize=10)
+                masks_ref_ct = self.output_transform(masks_ref_ct)
+            elif label_select_type == 'erode':
+                masks_ref_ct = erode(masks_ref_ct, ksize=10)                
+                masks_ref_ct = self.output_transform(masks_ref_ct)
+            elif label_select_type == 'bbox':
+                try:
+                    idx = torch.where(masks_ref_ct > 0)
+                    y_min, y_max = torch.min(idx[1], dim=0)[0].item(), torch.max(idx[1], dim=0)[0].item()
+                    x_min, x_max = torch.min(idx[2], dim=0)[0].item(), torch.max(idx[2], dim=0)[0].item()
+
+                    masks_ref_ct = torch.zeros_like(masks_ref_ct)
+                    masks_ref_ct[:, y_min:y_max, x_min:x_max] = 1  
+                except:
+                    pass
+            else:
+                pass   
+
+            support_imgs.append(image_ref)
+            support_masks.append(masks_ref)
+            support_ctr_imgs.append(image_ref_ctr)
+            support_ctr_masks.append(masks_ref_ct)
+
+        masks_ori = masks
+
+        sample = {
+            'image': image,
+            'label': masks,
+            'supp_image': torch.stack(support_imgs),
+            'supp_label': torch.stack(support_masks),
+            'supp_ctr_image': torch.stack(support_ctr_imgs),
+            'supp_ctr_label': torch.stack(support_ctr_masks),
+            'is_inst': False,
+            'info': self.dataset_name,
+            # "imidx": torch.from_numpy(np.array(index)),
+            # "shape": torch.tensor(image.shape[-2:]),
+            'num_samples': torch.from_numpy(np.array(self.num_samples)),
+        }
+
+        if self.is_meta:
+            sample.update(class_id=cats_list[0])
+
+        if self.is_semseg:
+            all_cats = np.array(sorted(self.coco.cats.keys()))
+            img_id = self.ids[index]
+            annos = self.coco.loadAnns(self.coco.getAnnIds(img_id))
+            masks = np.stack([self.coco.annToMask(x) for x in annos]) #(ninst, h, w)
+            cat_ids = np.array([x['category_id'] for x in annos]) #(ninst, )
+            all_cats_this = cat_ids[None] == all_cats[:, None]
+ 
+            all_cats_this = cat_ids[None] == all_cats[:, None]
+            ninst, h, w = masks.shape
+            semmask = (all_cats_this @ masks.reshape(ninst, -1)).reshape(-1, h, w).clip(max=1)
+            sample['origin_semmask'] = semmask
+
+        if not self.is_train:
+            sample.update({
+                'ori_label':masks_ori,
+                'class_id': torch.tensor(cats_list[0])
+            })
+
+
+        if False :
+            import cv2
+            cv2.imwrite('tmp.jpg', image.permute(1,2,0).int().numpy())
+            cv2.imwrite('tmp.jpg', sample['image'].permute(1,2,0).int().numpy())
+            cv2.imwrite('tmp.jpg', sample['image_dual'].permute(1,2,0).int().numpy())
+            pass
+        return sample
+
 class SAMSegADEDataset(VisionDataset):
     def __init__(self, 
                  root,
@@ -1408,7 +1676,7 @@ class SAMSegADEDataset(VisionDataset):
                 image_ids.append(x[:-4])
         self.image_ids = []
 
-        meta_path = "/home/dmsheng/code/try/SEGIC/utils/dataset/{}_{}_icl.pth".format('train' if is_train else 'val', dataset_name)
+        meta_path = "/home/qchugroup/sdmcvpr2025/code/try/SEGIC/utils/dataset/{}_{}_icl.pth".format('train' if is_train else 'val', dataset_name)
         if not os.path.exists(meta_path):
             meta_info = defaultdict(list)
             for img_id in tqdm(image_ids) :
@@ -1596,7 +1864,7 @@ class SAMSegADEDataset(VisionDataset):
 
         return sample
 
-class SAMSegADEContrasiveDataset(VisionDataset):
+class SAMSegADEContrastiveDataset(VisionDataset):
     def __init__(self, 
                  root,
                  transform=None,
@@ -1681,7 +1949,7 @@ class SAMSegADEContrasiveDataset(VisionDataset):
                 image_ids.append(x[:-4])
         self.image_ids = []
 
-        meta_path = "/home/dmsheng/code/try/SEGIC/utils/dataset/{}_{}_icl.pth".format('train' if is_train else 'val', dataset_name)
+        meta_path = "/home/qchugroup/sdmcvpr2025/code/try/SEGIC/utils/dataset/{}_{}_icl.pth".format('train' if is_train else 'val', dataset_name)
         if not os.path.exists(meta_path):
             meta_info = defaultdict(list)
             for img_id in tqdm(image_ids) :
@@ -1772,8 +2040,6 @@ class SAMSegADEContrasiveDataset(VisionDataset):
             masks_list.append(masks==cid)
 
         masks = np.stack(masks_list)
-        def to_tensor(x):
-            return torch.tensor(np.array(x), dtype=torch.float32).permute(2,0,1)
 
         if (self.transforms is not None) and (not supp):
             image = self.sam_transform.apply_image(np.array(image))
@@ -1843,7 +2109,7 @@ class SAMSegADEContrasiveDataset(VisionDataset):
 
                 for i in range(3):
                     try:
-                        temp_img, temp_mask = apply_transform(image_ref, masks_ref)
+                        temp_img, temp_mask = apply_transform(image_ref_ctr, masks_ref_ct)
                         temp_mask = (temp_mask > 0).astype(temp_img.dtype)
                         assert temp_mask.max() > 0
                         image_ref_ctr, masks_ref_ct = temp_img, temp_mask
@@ -1864,8 +2130,8 @@ class SAMSegADEContrasiveDataset(VisionDataset):
                 elif label_select_type == 'bbox':
                     try:
                         idx = torch.where(masks_ref_ct > 0)
-                        y_min, y_max = torch.min(idx[1], dim=0).item(), torch.max(idx[1], dim=0).item()
-                        x_min, x_max = torch.min(idx[2], dim=0).item(), torch.max(idx[2], dim=0).item()
+                        y_min, y_max = torch.min(idx[1], dim=0)[0].item(), torch.max(idx[1], dim=0)[0].item()
+                        x_min, x_max = torch.min(idx[2], dim=0)[0].item(), torch.max(idx[2], dim=0)[0].item()
 
                         masks_ref_ct = torch.zeros_like(masks_ref_ct)
                         masks_ref_ct[:, y_min:y_max, x_min:x_max] = 1  
@@ -1916,16 +2182,18 @@ class SAMSegADEContrasiveDataset(VisionDataset):
 
         return sample
 
-class MixSemSegContrasiveDataset(ConcatDataset):
+class MixSemSegContrastiveDataset(ConcatDataset):
     """Wrapper for mix segmentation and unseg data"""
 
     def __init__(self, transform, target_transform, size=518, num_samples=1, stage='train'): # , tokenizer
         if stage=='train':
-            super().__init__([SAMImgSegContrasiveDataset(COCO_ROOT_TRAIN, transform=transform, target_transform=target_transform, size=size, is_train=True, dataset_name='coco_train'), 
-                              SAMSegADEContrasiveDataset(ADE_ROOT, transform=transform, target_transform=target_transform, size=size, num_samples=num_samples, is_train=True)])
+            super().__init__([SAMImgSegContrastiveDataset(COCO_ROOT_TRAIN, transform=transform, target_transform=target_transform, size=size, is_train=True, dataset_name='coco_train'), 
+                              SAMSegADEContrastiveDataset(ADE_ROOT, transform=transform, target_transform=target_transform, size=size, num_samples=num_samples, is_train=True),
+                              SAMSegLVISContrastiveDataset(LVIS_ROOT, transform=transform, target_transform=target_transform, size=size, num_samples=num_samples, is_train=True),
+                              ])
         else:
-            super().__init__([SAMImgSegContrasiveDataset(COCO_ROOT_VAL, transform=transform, target_transform=target_transform, size=size, is_train=False, dataset_name='coco_val'), 
-                              SAMSegADEContrasiveDataset(ADE_ROOT, transform=transform, target_transform=target_transform, size=size, num_samples=num_samples, is_train=False)])
+            super().__init__([SAMImgSegContrastiveDataset(COCO_ROOT_VAL, transform=transform, target_transform=target_transform, size=size, is_train=False, dataset_name='coco_val'), 
+                              SAMSegADEContrastiveDataset(ADE_ROOT, transform=transform, target_transform=target_transform, size=size, num_samples=num_samples, is_train=False)])
         self.num_samples = num_samples
 
         self.dataset_length = np.array([len(ds) for ds in self.datasets])
@@ -1962,10 +2230,10 @@ class MixSemSegCOCODataset(ConcatDataset):
     """Wrapper for mix segmentation and unseg data"""
 
     def __init__(self, transform, target_transform, size=518, num_samples=1, stage='train'): # , tokenizer
-        super().__init__([FSSCOCODataset(datapath='/home/dmsheng/datasets/coco', fold=0, split=stage, shot=1, transform=transform, target_transform=target_transform),
-                          FSSCOCODataset(datapath='/home/dmsheng/datasets/coco', fold=1, split=stage, shot=1, transform=transform, target_transform=target_transform), 
-                          FSSCOCODataset(datapath='/home/dmsheng/datasets/coco', fold=2, split=stage, shot=1, transform=transform, target_transform=target_transform),
-                          FSSCOCODataset(datapath='/home/dmsheng/datasets/coco', fold=3, split=stage, shot=1, transform=transform, target_transform=target_transform)])
+        super().__init__([FSSCOCODataset(datapath='/home/qchugroup/sdmcvpr2025/datasets/coco', fold=0, split=stage, shot=1, transform=transform, target_transform=target_transform),
+                          FSSCOCODataset(datapath='/home/qchugroup/sdmcvpr2025/datasets/coco', fold=1, split=stage, shot=1, transform=transform, target_transform=target_transform), 
+                          FSSCOCODataset(datapath='/home/qchugroup/sdmcvpr2025/datasets/coco', fold=2, split=stage, shot=1, transform=transform, target_transform=target_transform),
+                          FSSCOCODataset(datapath='/home/qchugroup/sdmcvpr2025/datasets/coco', fold=3, split=stage, shot=1, transform=transform, target_transform=target_transform)])
         self.num_samples = num_samples
 
         self.dataset_length = np.array([len(ds) for ds in self.datasets])
@@ -2231,7 +2499,7 @@ class FSSCOCODataset(VisionDataset):
 
     def build_img_metadata_classwise(self):
         import pickle
-        with open('/home/dmsheng/datasets/coco/fss_data_lists/split/coco/%s/fold%d.pkl' % (self.split, self.fold), 'rb') as f:
+        with open('/home/qchugroup/sdmcvpr2025/datasets/coco/fss_data_lists/split/coco/%s/fold%d.pkl' % (self.split, self.fold), 'rb') as f:
             img_metadata_classwise = pickle.load(f)
         return img_metadata_classwise
 
@@ -2438,9 +2706,9 @@ if __name__=='__main__':
     '''
     segmentaion
     '''
-    seg_json_file = '/home/dmsheng/datasets/coco/annotations/instances_train2017.json'
-    seg_image_root = '/home/dmsheng/datasets/coco/val2017'
-    sam_seg_json = "/home/dmsheng/datasets/coco/annotations/train_seg_3w.json"
+    seg_json_file = '/home/qchugroup/sdmcvpr2025/datasets/coco/annotations/instances_train2017.json'
+    seg_image_root = '/home/qchugroup/sdmcvpr2025/datasets/coco/val2017'
+    sam_seg_json = "/home/qchugroup/sdmcvpr2025/datasets/coco/annotations/train_seg_3w.json"
 
     # seg_dataset = SAMSegUnoverlapDataset(COCO_ROOT_TRAIN, sam_seg_json, transform=image_transform, target_transform=mask_transform, num_samples=1, size=512)
     # ['gaussian', 'gray', 'color_jitter', 'sharp', 'horizontal_flip', 'vertical_flip', 
@@ -2454,29 +2722,30 @@ if __name__=='__main__':
     #                                 fold=0,
     #                                 size=512) # 'gaussian','gray','color_jitter','sobel','canny','sharp','jpeg_compression','gaussian_noise','motion_blur'
     # seg_dataset = MySegDataset(seg_image_root, seg_json_file, transform=image_transform, target_transform=mask_transform)
-    # seg_dataset = SAMImgSegContrasiveDataset(COCO_ROOT_VAL, 
+    # seg_dataset = SAMSegLVISContrastiveDataset(LVIS_ROOT, 
     #                                 transform=image_transform, 
     #                                 target_transform=mask_transform, 
     #                                 num_samples=1,
     #                                 is_train=False, 
     #                                 size=518)
-    # seg_dataset = MixSemSegContrasiveDataset(transform=image_transform, target_transform=mask_transform, num_samples=1, size=518, stage='val')
+    seg_dataset = MixSemSegContrastiveDataset(transform=image_transform, target_transform=mask_transform, num_samples=1, size=518, stage='train')
 
-    # data_loader = torch.utils.data.DataLoader(
-    #     seg_dataset,
-    #     batch_size=4,
-    #     num_workers=0,
-    #     pin_memory=True,
-    #     drop_last=True,
-    #     shuffle=True
-    # )
+    print(seg_dataset)
+    data_loader = torch.utils.data.DataLoader(
+        seg_dataset,
+        batch_size=4,
+        num_workers=0,
+        pin_memory=True,
+        drop_last=True,
+        shuffle=True
+    )
 
     # # from pathlib import Path
     # # from torchvision.utils import save_image
     # # Path('analysis/test').mkdir(parents=True, exist_ok=True)
     # # transform = transforms.Resize((512, 512), interpolation=transforms.InterpolationMode.NEAREST)
-    # for num, data in tqdm(enumerate(data_loader)):
-    #     print(data['info'])
+    for num, data in tqdm(enumerate(data_loader)):
+        print(data['info'])
     #     samples, refers = data['samples'], data['refer']
     #     sample_refers, sample_gts, refer, gt = samples['input'], samples['output'], refers['input'], refers['output']
     #     B, C, H, W = refer.shape
@@ -2496,7 +2765,7 @@ if __name__=='__main__':
     '''
     FSS
     '''
-    # dataset_val = FSS1000Dataset(base_data_root='/home/dmsheng/datasets/fss-1000', 
+    # dataset_val = FSS1000Dataset(base_data_root='/home/qchugroup/sdmcvpr2025/datasets/fss-1000', 
     #                          transform=image_transform, target_transform=mask_transform, 
     # )
 

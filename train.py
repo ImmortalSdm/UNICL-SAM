@@ -119,7 +119,7 @@ def get_train_dataset(args):
             transforms.ToTensor()])
         dataset_train = SAMImgSegDataset(transform=image_transform, target_transform=mask_transform, num_samples=args.samples_num, size=args.input_size)
         dataset_val = MixSemSegCOCODataset(transform=image_transform, target_transform=mask_transform, num_samples=args.samples_num, size=args.input_size, stage='val')
-    elif args.data_type == 'sam_seg_imgiter_degrad_contrasive':
+    elif args.data_type == 'sam_seg_imgiter_degrad_contrastive':
         image_transform = transforms.Compose([
             transforms.Resize((args.input_size, args.input_size)),
             transforms.ToTensor()])
@@ -127,9 +127,9 @@ def get_train_dataset(args):
             transforms.Resize((args.input_size, args.input_size)),
             transforms.Grayscale(3),
             transforms.ToTensor()])
-        dataset_train = SAMImgSegContrasiveDataset(transform=image_transform, target_transform=mask_transform, num_samples=args.samples_num, size=args.input_size)
+        dataset_train = SAMImgSegContrastiveDataset(root=COCO_ROOT_TRAIN, transform=image_transform, target_transform=mask_transform, num_samples=args.samples_num, size=args.input_size)
         dataset_val = MixSemSegCOCODataset(transform=image_transform, target_transform=mask_transform, num_samples=args.samples_num, size=args.input_size, stage='val')
-    elif args.data_type == 'sam_seg_semantic_degrad_contrasive':
+    elif args.data_type == 'sam_seg_semantic_degrad_contrastive':
         image_transform = transforms.Compose([
             transforms.Resize((args.input_size, args.input_size)),
             transforms.ToTensor()])
@@ -137,7 +137,7 @@ def get_train_dataset(args):
             transforms.Resize((args.input_size, args.input_size)),
             transforms.Grayscale(3),
             transforms.ToTensor()])
-        dataset_train = MixSemSegContrasiveDataset(transform=image_transform, target_transform=mask_transform, num_samples=args.samples_num, size=args.input_size)
+        dataset_train = MixSemSegContrastiveDataset(transform=image_transform, target_transform=mask_transform, num_samples=args.samples_num, size=args.input_size)
         dataset_val = MixSemSegCOCODataset(transform=image_transform, target_transform=mask_transform, num_samples=args.samples_num, size=args.input_size, stage='val')
     elif args.data_type in ['fss', 'mix_fss']:
         image_transform = transforms.Compose([
@@ -147,10 +147,10 @@ def get_train_dataset(args):
             transforms.Resize((args.input_size, args.input_size)),
             transforms.Grayscale(3),
             transforms.ToTensor()])
-        dataset_train = FSS1000Dataset(split=args.split, shot=args.samples_num, data_set='coco', base_data_root='/home/dmsheng/datasets/coco', 
+        dataset_train = FSS1000Dataset(split=args.split, shot=args.samples_num, data_set='coco', base_data_root='/home/qchugroup/sdmcvpr2025/datasets/coco', 
                                         use_split_coco=True, transform=image_transform, target_transform=mask_transform, 
                                         mode='train')
-        dataset_val = FSS1000Dataset(split=args.split, shot=args.samples_num, data_set='coco', base_data_root='/home/dmsheng/datasets/coco', 
+        dataset_val = FSS1000Dataset(split=args.split, shot=args.samples_num, data_set='coco', base_data_root='/home/qchugroup/sdmcvpr2025/datasets/coco', 
                                         use_split_coco=True, transform=image_transform, target_transform=mask_transform, 
                                         mode='val')
     else:

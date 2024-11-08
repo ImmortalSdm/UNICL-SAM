@@ -784,7 +784,7 @@ class SAMSegScaleDataset(VisionDataset):
 def generate_clip_region_embedding():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     clip_model, preprocess = clip.load("ckpts/clip/vit-L/default/ViT-L-14.pt", device=device)
-    val_file = "/home/dmsheng/datasets/coco/annotations/val_seg_3w.json"
+    val_file = "/home/qchugroup/sdmcvpr2025/datasets/coco/annotations/val_seg_3w.json"
 
     with open(val_file,'r') as fr: 
         seg_json = json.load(fr)   
@@ -981,7 +981,7 @@ if __name__ == '__main__':
     model.to(device)
     model.eval()
 
-    val_file = "/home/dmsheng/datasets/coco/annotations/val_seg_3w.json"
+    val_file = "/home/qchugroup/sdmcvpr2025/datasets/coco/annotations/val_seg_3w.json"
     image_transform = transforms.Compose([
         transforms.Resize((args.input_size, args.input_size)),
         transforms.ToTensor()])
@@ -1019,7 +1019,7 @@ if __name__ == '__main__':
                                         **kwags
                                     ) 
     elif args.data_type == 'scale':
-        val_file = "/home/dmsheng/datasets/coco/annotations/val_sd_coco_xpaste_aug_seg_3w.json"
+        val_file = "/home/qchugroup/sdmcvpr2025/datasets/coco/annotations/val_sd_coco_xpaste_aug_seg_3w.json"
         dataset_val = SAMSegScaleDataset(COCO_ROOT_VAL, val_file, 
                                         transform=image_transform, 
                                         target_transform=mask_transform,

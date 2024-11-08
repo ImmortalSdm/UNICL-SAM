@@ -40,6 +40,6 @@ loss:
   dice: 5
   ce: 20
   # kl: 100
-  # contrasive: 0.2
+  # contrastive: 0.2
   # focal: 10
   # iou: 10

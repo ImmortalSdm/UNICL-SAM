@@ -4,22 +4,22 @@ COCO setting
 from glob import glob
 import os
 
-COCO_ROOT_TRAIN = '/home/dmsheng/datasets/coco/train2017'
-COCO_ROOT_VAL = '/home/dmsheng/datasets/coco/val2017'
-COCO_CAP_ANN_TRAIN = '/home/dmsheng/datasets/coco/annotations/captions_train2017.json'
-COCO_CAP_ANN_VAL   = '/home/dmsheng/datasets/coco/annotations/captions_val2017.json'
-COCO_SEG_ANN_TRAIN = '/home/dmsheng/datasets/coco/annotations/instances_train2017.json'
-COCO_SEG_ANN_VAL   = '/home/dmsheng/datasets/coco/annotations/instances_val2017.json'
-LVIS_ROOT = '/home/dmsheng/datasets/coco'
-LVIS_SEG_ANN_TRAIN = "/home/dmsheng/datasets/coco/annotations/lvis_v1_train.json"
-LVIS_SEG_ANN_VAL   = "/home/dmsheng/datasets/coco/annotations/lvis_v1_val.json"
-COCO_P_TRAIN = '/home/dmsheng/datasets/coco/panoptic_train2017'
-COCO_P_VAL = '/home/dmsheng/datasets/coco/panoptic_val2017'
-COCO_S_TRAIN = '/home/dmsheng/datasets/coco/stuff_164k_seg/train2017'
-COCO_S_VAL = '/home/dmsheng/datasets/coco/stuff_164k_seg/val2017'
-COCO_K_TRAIN = '/home/dmsheng/datasets/coco/keypoint_val2017'
-COCO_K_VAL = '/home/dmsheng/datasets/coco/keypoint_val2017'
-ADE_ROOT = '/mnt/data/homes/segintosh/dataset/ade20k'
+COCO_ROOT_TRAIN = '/home/qchugroup/sdmcvpr2025/datasets/coco/train2017'
+COCO_ROOT_VAL = '/home/qchugroup/sdmcvpr2025/datasets/coco/val2017'
+COCO_CAP_ANN_TRAIN = '/home/qchugroup/sdmcvpr2025/datasets/coco/annotations/captions_train2017.json'
+COCO_CAP_ANN_VAL   = '/home/qchugroup/sdmcvpr2025/datasets/coco/annotations/captions_val2017.json'
+COCO_SEG_ANN_TRAIN = '/home/qchugroup/sdmcvpr2025/datasets/coco/annotations/instances_train2017.json'
+COCO_SEG_ANN_VAL   = '/home/qchugroup/sdmcvpr2025/datasets/coco/annotations/instances_val2017.json'
+LVIS_ROOT = '/home/qchugroup/sdmcvpr2025/datasets/coco'
+LVIS_SEG_ANN_TRAIN = "/home/qchugroup/sdmcvpr2025/datasets/coco/annotations/lvis_v1_train.json"
+LVIS_SEG_ANN_VAL   = "/home/qchugroup/sdmcvpr2025/datasets/coco/annotations/lvis_v1_val.json"
+COCO_P_TRAIN = '/home/qchugroup/sdmcvpr2025/datasets/coco/panoptic_train2017'
+COCO_P_VAL = '/home/qchugroup/sdmcvpr2025/datasets/coco/panoptic_val2017'
+COCO_S_TRAIN = '/home/qchugroup/sdmcvpr2025/datasets/coco/stuff_164k_seg/train2017'
+COCO_S_VAL = '/home/qchugroup/sdmcvpr2025/datasets/coco/stuff_164k_seg/val2017'
+COCO_K_TRAIN = '/home/qchugroup/sdmcvpr2025/datasets/coco/keypoint_val2017'
+COCO_K_VAL = '/home/qchugroup/sdmcvpr2025/datasets/coco/keypoint_val2017'
+ADE_ROOT = '/home/qchugroup/sdmcvpr2025/datasets/ade20k'
 
 
 coco_id_name_map={1: 'person', 2: 'bicycle', 3: 'car', 4: 'motorcycle', 5: 'airplane',

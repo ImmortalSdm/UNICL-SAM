@@ -1,6 +1,6 @@
 model:
   dinov2_config:
-    type: "/home/dmsheng/code/visual_prompting/ckpts/dinov2/large"
+    type: "/home/qchugroup/sdmcvpr2025/code/UNICL-SAM/ckpts/dinov2/large"
   fpn_config:
     out_channels: 1024
     multi_scale_fusion: 'bfp'
@@ -48,7 +48,7 @@ model:
     hidden_act: "gelu"
   sam_config:
     type: 'vit_h'
-    ckpt: "/home/dmsheng/code/visual_prompting/ckpts/sam/sam_vit_h_4b8939.pth"
+    ckpt: "/home/qchugroup/sdmcvpr2025/code/UNICL-SAM/ckpts/sam/sam_vit_h_4b8939.pth"
     train_mask_decoder: false
   with_simple_fpn: true
   feat_interpolate: false

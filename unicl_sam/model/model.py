@@ -581,7 +581,7 @@ class ICL_VRP_SAM_DINO_VitDet_FPN_Uncertatinty_Deterministic_Contrastive(nn.Modu
         supp_ctr, supp_ctr_label = data['supp_ctr_image'].cuda(), data['supp_ctr_label'].cuda()
         supp, supp_label = supp.transpose(0,1).contiguous(), supp_label.transpose(0,1).contiguous()
         supp_ctr, supp_ctr_label = supp_ctr.transpose(0,1).contiguous(), supp_ctr_label.transpose(0,1).contiguous()
-        query_feats = self.get_image_embedding(query/256., model_type='dino') # B, 768, 18, 18
+        query_feats = self.get_image_embedding(torch.clip(query/255., 0, 1), model_type='dino') # B, 768, 18, 18
 
         if self.config.model.with_simple_fpn:
             query_feats = self.fpn(query_feats)
@@ -751,7 +751,7 @@ class ICL_VRP_SAM_DINO_VitDet_FPN_Uncertatinty_Deterministic_Contrastive(nn.Modu
         # get query embedding
         supp, supp_label, query, query_label = data['supp_image'].cuda(), data['supp_label'].cuda(), data['image'].cuda(), data['label'].cuda() 
         supp, supp_label = supp.transpose(0,1).contiguous(), supp_label.transpose(0,1).contiguous()
-        query_feats = self.get_image_embedding(query/256., model_type='dino') # B, 768, 18, 18
+        query_feats = self.get_image_embedding(torch.clip(query/255., 0, 1), model_type='dino') # B, 768, 18, 18
 
         if self.config.model.with_simple_fpn:
             query_feats = self.fpn(query_feats)
@@ -844,7 +844,7 @@ class ICL_VRP_SAM_DINO_VitDet_FPN_Uncertatinty_Deterministic_Contrastive(nn.Modu
         # get query embedding
         supp, supp_label, query, query_label = data['supp_image'].cuda(), data['supp_label'].cuda(), data['image'].cuda(), data['label'].cuda() 
         supp, supp_label = supp.transpose(0,1).contiguous(), supp_label.transpose(0,1).contiguous()
-        query_feats = self.get_image_embedding(query/256., model_type='dino') # B, 768, 18, 18
+        query_feats = self.get_image_embedding(torch.clip(query/255., 0, 1), model_type='dino') # B, 768, 18, 18
 
         if self.config.model.with_simple_fpn:
             query_feats = self.fpn(query_feats)
@@ -902,7 +902,7 @@ class ICL_VRP_SAM_DINO_VitDet_FPN_Uncertatinty_Deterministic_Contrastive(nn.Modu
         # get query embedding
         supp, supp_label, query, query_label = data['supp_image'].cuda(), data['supp_label'].cuda(), data['image'].cuda(), data['label'].cuda() 
         supp, supp_label = supp.transpose(0,1).contiguous(), supp_label.transpose(0,1).contiguous()
-        query_feats = self.get_image_embedding(query/256., model_type='dino') # B, 768, 18, 18
+        query_feats = self.get_image_embedding(torch.clip(query/255., 0, 1), model_type='dino') # B, 768, 18, 18
 
         if self.config.model.with_simple_fpn:
             query_feats = self.fpn(query_feats)
@@ -930,7 +930,7 @@ class ICL_VRP_SAM_DINO_VitDet_FPN_Uncertatinty_Deterministic_Contrastive(nn.Modu
         # get query embedding
         supp, supp_label, query, query_label = data['supp_image'].cuda(), data['supp_label'].cuda(), data['image'].cuda(), data['label'].cuda() 
         supp, supp_label = supp.transpose(0,1).contiguous(), supp_label.transpose(0,1).contiguous()
-        query_feats = self.get_image_embedding(query/256., model_type='dino') # B, 768, 18, 18
+        query_feats = self.get_image_embedding(torch.clip(query/255., 0, 1), model_type='dino') # B, 768, 18, 18
 
         if self.config.model.with_simple_fpn:
             query_feats = self.fpn(query_feats)
@@ -1029,7 +1029,7 @@ class ICL_VRP_SAM_DINO_VitDet_FPN_Uncertatinty_Deterministic_Contrastive(nn.Modu
         return final_mask
 
 if __name__=='__main__':
-    from ..data import COCO_ROOT_VAL, SAMImgSegContrasiveDataset
+    from ..data import COCO_ROOT_VAL, SAMImgSegContrastiveDataset
     from tqdm import tqdm
     # from torchsummary import summary
     image_transform = transforms.Compose([
@@ -1040,9 +1040,9 @@ if __name__=='__main__':
         transforms.Grayscale(3),
         transforms.ToTensor()])
 
-    val_file = "/home/dmsheng/datasets/coco/annotations/val_seg_3w.json"
+    val_file = "/home/qchugroup/sdmcvpr2025/datasets/coco/annotations/val_seg_3w.json"
     test_ids = "configs/test/caicl_seg_3w_num_1_id.json"
-    dataset_val = SAMImgSegContrasiveDataset(COCO_ROOT_VAL, val_file, 
+    dataset_val = SAMImgSegContrastiveDataset(COCO_ROOT_VAL, 
                                 transform=image_transform, 
                                 target_transform=mask_transform, 
                                 num_samples=1, 
