@@ -16,7 +16,7 @@ import bisect
 import numpy as np
 from PIL import Image
 from copy import deepcopy
-from torch.utils.data import ConcatDataset
+from torch.utils.data import Dataset, ConcatDataset
 from tempfile import NamedTemporaryFile
 from torchvision import transforms as T
 from torchvision.transforms import functional as F
@@ -821,8 +821,8 @@ class SAMImgSegDataset(VisionDataset):
         refer_crop_img, refer_crop_mask = self.old_get_crop(np.array(refer_img), refer_img_shape, refer_bboxs, refer_segs, refer_cat_id, input=True)
         if self.transforms is not None:
             refer_crop_img = self.sam_transform.apply_image(refer_crop_img)
-            refer_crop_img = torch.tensor(refer_crop_img).permute(2, 0, 1)
-            refer_crop_mask = self._mask_transform(refer_crop_mask).unsqueeze(0)
+            refer_crop_img = torch.tensor(refer_crop_img).float().permute(2, 0, 1)
+            refer_crop_mask = self._mask_transform(refer_crop_mask).float().unsqueeze(0)
 
         samples_input = []
         samples_output = []
@@ -851,16 +851,16 @@ class SAMImgSegDataset(VisionDataset):
 
         sample = {
             'image': refer_crop_img,
-            'label': refer_crop_mask,
-            'supp_image': torch.stack(samples_input),
-            'supp_label': torch.stack(samples_output),
+            'label': refer_crop_mask*255,
+            'supp_image': torch.stack(samples_input)[0]*255,
+            'supp_label': torch.stack(samples_output)[0]*255,
             # "img_id": torch.from_numpy(np.array(refer_img_id)),
             # 'supp_img_id': torch.tensor(samples_img_id),
-            # "shape": torch.tensor(refer_img_shape),
+            "shape": torch.tensor(refer_img_shape),
             # "class_name": torch.from_numpy(np.array(int(refer_cat_id))),
             'is_inst': False,
-            'info': self.dataset_name,
-            'num_samples': torch.from_numpy(np.array(self.num_samples))
+            # 'info': self.dataset_name,
+            # 'num_samples': torch.from_numpy(np.array(self.num_samples))
         }
 
         return sample
@@ -1071,12 +1071,15 @@ class SAMImgSegContrastiveDataset(VisionDataset):
                 sample_ctr_mask = erode(sample_ctr_mask, ksize=10)                
                 sample_ctr_mask = self.output_transform(sample_ctr_mask)
             elif label_select_type == 'bbox':
-                idx = torch.where(sample_ctr_mask > 0)
-                y_min, y_max = torch.min(idx[1]).item(), torch.max(idx[1]).item()
-                x_min, x_max = torch.min(idx[2]).item(), torch.max(idx[2]).item()
+                try:
+                    idx = torch.where(sample_ctr_mask > 0)
+                    y_min, y_max = torch.min(idx[1], dim=0).item(), torch.max(idx[1], dim=0).item()
+                    x_min, x_max = torch.min(idx[2], dim=0).item(), torch.max(idx[2], dim=0).item()
 
-                sample_ctr_mask = torch.zeros_like(sample_ctr_mask)
-                sample_ctr_mask[:, y_min:y_max, x_min:x_max] = 1  
+                    sample_ctr_mask = torch.zeros_like(sample_ctr_mask)
+                    sample_ctr_mask[:, y_min:y_max, x_min:x_max] = 1  
+                except:
+                    pass
             else:
                 pass          
             
@@ -1267,8 +1270,8 @@ class SAMSegLVISDataset(VisionDataset):
         if self.transforms is not None:
             image = self.sam_transform.apply_image(np.array(image))
             image = torch.tensor(image).permute(2, 0, 1)
-            image = self.output_transform(image)
-            masks = self.mask_transform(masks).unsqueeze(0)
+            image = self.output_transform(image).float()
+            masks = self.mask_transform(masks).float().unsqueeze(0)
 
         support_imgs, support_masks = [], []
         for cid in cats_list:
@@ -1281,17 +1284,16 @@ class SAMSegLVISDataset(VisionDataset):
             support_masks.append(masks_ref)
 
         masks_ori = masks
-
         sample = {
             'image': image,
-            'label': masks,
-            'supp_image': torch.stack(support_imgs),
-            'supp_label': torch.stack(support_masks),
+            'label': masks*255,
+            'supp_image': torch.stack(support_imgs)[0]*255,
+            'supp_label': torch.stack(support_masks)[0]*255,
             'is_inst': False,
-            'info': self.dataset_name,
-            "imidx": torch.from_numpy(np.array(index)),
+            # 'info': self.dataset_name,
+            # "img_id": torch.from_numpy(np.array(index)),
             "shape": torch.tensor(image.shape[-2:]),
-            'num_samples': torch.from_numpy(np.array(self.num_samples)),
+            # 'num_samples': torch.from_numpy(np.array(self.num_samples)),
         }
 
         if self.is_meta:
@@ -1310,11 +1312,11 @@ class SAMSegLVISDataset(VisionDataset):
             semmask = (all_cats_this @ masks.reshape(ninst, -1)).reshape(-1, h, w).clip(max=1)
             sample['origin_semmask'] = semmask
 
-        if not self.is_train:
-            sample.update({
-                'ori_label':masks_ori,
-                'class_id': torch.tensor(cats_list[0])
-            })
+        # if not self.is_train:
+        #     sample.update({
+        #         'ori_label':masks_ori,
+        #         'class_id': torch.tensor(cats_list[0])
+        #     })
 
 
         if False :
@@ -1676,7 +1678,7 @@ class SAMSegADEDataset(VisionDataset):
                 image_ids.append(x[:-4])
         self.image_ids = []
 
-        meta_path = "/home/qchugroup/sdmcvpr2025/code/try/SEGIC/utils/dataset/{}_{}_icl.pth".format('train' if is_train else 'val', dataset_name)
+        meta_path = "/home/qchugroup/sdmcvpr2025/code/UNICL-SAM/ckpts/{}_{}_icl.pth".format('train' if is_train else 'val', dataset_name)
         if not os.path.exists(meta_path):
             meta_info = defaultdict(list)
             for img_id in tqdm(image_ids) :
@@ -1773,8 +1775,8 @@ class SAMSegADEDataset(VisionDataset):
         if (self.transforms is not None) and (not supp):
             image = self.sam_transform.apply_image(np.array(image))
             image = torch.tensor(image).permute(2, 0, 1)
-            image = self.output_transform(image)
-            masks = self.mask_transform(masks).unsqueeze(0)
+            image = self.output_transform(image).float()
+            masks = self.mask_transform(masks).float().unsqueeze(0)
 
         if ret_uni_cids :
             return image, masks, cats_list, uni_cids
@@ -1811,10 +1813,12 @@ class SAMSegADEDataset(VisionDataset):
 
         sample = {
             'image': image,
-            'label': masks,
+            'label': masks*255,
             'is_inst': False,
-            'info': self.dataset_name,
-            'num_samples': torch.from_numpy(np.array(self.num_samples)),
+            # "img_id": torch.from_numpy(np.array(int(img_id))),
+            "shape": torch.tensor(image.shape[-2:]),
+            # 'info': self.dataset_name,
+            # 'num_samples': torch.from_numpy(np.array(self.num_samples)),
         }
 
         if self.is_meta:
@@ -1831,8 +1835,8 @@ class SAMSegADEDataset(VisionDataset):
 
             # FIXME: only support num_inst == 1
             sample.update({
-                'supp_image': torch.stack(support_imgs),
-                'supp_label': torch.stack(support_masks),
+                'supp_image': torch.stack(support_imgs)[0]*255,
+                'supp_label': torch.stack(support_masks)[0]*255,
             })
 
             # return super().__getitem__(index)
@@ -2190,7 +2194,7 @@ class MixSemSegContrastiveDataset(ConcatDataset):
             super().__init__([SAMImgSegContrastiveDataset(COCO_ROOT_TRAIN, transform=transform, target_transform=target_transform, size=size, is_train=True, dataset_name='coco_train'), 
                               SAMSegADEContrastiveDataset(ADE_ROOT, transform=transform, target_transform=target_transform, size=size, num_samples=num_samples, is_train=True),
                               SAMSegLVISContrastiveDataset(LVIS_ROOT, transform=transform, target_transform=target_transform, size=size, num_samples=num_samples, is_train=True),
-                              ])
+                            ])
         else:
             super().__init__([SAMImgSegContrastiveDataset(COCO_ROOT_VAL, transform=transform, target_transform=target_transform, size=size, is_train=False, dataset_name='coco_val'), 
                               SAMSegADEContrastiveDataset(ADE_ROOT, transform=transform, target_transform=target_transform, size=size, num_samples=num_samples, is_train=False)])
@@ -2265,6 +2269,28 @@ class MixSemSegCOCODataset(ConcatDataset):
             sample_idx = idx - self.cumulative_sizes[dataset_idx - 1]
             
         return self.datasets[dataset_idx][sample_idx]
+
+class CustomConcatDataset(Dataset):
+    def __init__(self, dataset_list, dataset_ratio=None, samples_per_epoch=160000):
+        self.dataset_list = dataset_list
+        if dataset_ratio is not None:
+            assert len(dataset_ratio) == len(dataset_list)
+        else :
+            dataset_ratio = [1] * len(dataset_list)
+        self.dataset_ratio = dataset_ratio
+        if samples_per_epoch is not None:
+            self.samples_per_epoch = samples_per_epoch
+        else:
+            self.samples_per_epoch = sum([len(ds) for ds in dataset_list])
+
+    def __len__(self,):
+        return self.samples_per_epoch
+
+    def __getitem__(self, index):
+        dataset_idx = random.choices(list(range(len(self.dataset_ratio))), weights=self.dataset_ratio, k=1)[0]
+        dataset = self.dataset_list[dataset_idx]
+        index = random.randint(0, len(dataset) - 1)
+        return dataset[index]
 
 class GetOutOfLoop(Exception):
     pass
@@ -2721,6 +2747,17 @@ if __name__=='__main__':
     #                                 is_train=False, 
     #                                 fold=0,
     #                                 size=512) # 'gaussian','gray','color_jitter','sobel','canny','sharp','jpeg_compression','gaussian_noise','motion_blur'
+    # seg_dataset = SAMSegADEDataset(ADE_ROOT, 
+    #                                 transform=image_transform, 
+    #                                 target_transform=mask_transform, 
+    #                                 num_samples=1, 
+    #                                 is_train=True, 
+    #                                 size=518) 
+    seg_dataset = CustomConcatDataset([
+            SAMImgSegDataset(transform=image_transform, target_transform=mask_transform, size=518, is_train=True, dataset_name='coco_train'), 
+            SAMSegADEDataset(ADE_ROOT, transform=image_transform, target_transform=mask_transform, size=518, num_samples=1, is_train=True),
+            SAMSegLVISDataset(LVIS_ROOT, transform=image_transform, target_transform=mask_transform, size=518, num_samples=1, is_train=True)],
+            None, samples_per_epoch=None)
     # seg_dataset = MySegDataset(seg_image_root, seg_json_file, transform=image_transform, target_transform=mask_transform)
     # seg_dataset = SAMSegLVISContrastiveDataset(LVIS_ROOT, 
     #                                 transform=image_transform, 
@@ -2728,7 +2765,7 @@ if __name__=='__main__':
     #                                 num_samples=1,
     #                                 is_train=False, 
     #                                 size=518)
-    seg_dataset = MixSemSegContrastiveDataset(transform=image_transform, target_transform=mask_transform, num_samples=1, size=518, stage='train')
+    # seg_dataset = MixSemSegContrastiveDataset(transform=image_transform, target_transform=mask_transform, num_samples=1, size=518, stage='train')
 
     print(seg_dataset)
     data_loader = torch.utils.data.DataLoader(
@@ -2745,7 +2782,7 @@ if __name__=='__main__':
     # # Path('analysis/test').mkdir(parents=True, exist_ok=True)
     # # transform = transforms.Resize((512, 512), interpolation=transforms.InterpolationMode.NEAREST)
     for num, data in tqdm(enumerate(data_loader)):
-        print(data['info'])
+        print(data['is_inst'])
     #     samples, refers = data['samples'], data['refer']
     #     sample_refers, sample_gts, refer, gt = samples['input'], samples['output'], refers['input'], refers['output']
     #     B, C, H, W = refer.shape

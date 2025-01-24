@@ -474,15 +474,15 @@ class DualAug():
     def __call__(self, sample) -> Any:
         sample_copy = deepcopy(sample)
         sample1 = self.aug_list1(sample)
-        if 'image_dual' in sample:
-            imidx, image_dual, label_dual, shape = sample['imidx'], sample['image_dual'], sample['label_dual'], sample['shape']
-            sample2 = {'imidx':imidx,'image':image_dual, 'label':label_dual, 'shape':shape}
+        if 'supp_image' in sample:
+            supp_image, supp_label, shape = sample['supp_image'], sample['supp_label'], sample['shape']
+            sample2 = {'image':supp_image, 'label':supp_label, 'shape':shape}
             sample2 = self.aug_list2(sample2)
         else :
             sample2 = self.aug_list2(sample_copy)
 
-        valid_keys = {'imidx','image','label','shape', 'ori_size'}
-        sample1.update({'{}_dual'.format(k):v for k,v in sample2.items() if k in valid_keys})
+        valid_keys = {'image','label'} # , 'ori_size','shape'
+        sample1.update({'supp_{}'.format(k):v for k,v in sample2.items() if k in valid_keys})
         return sample1
 
 class GaussianBlur(object):

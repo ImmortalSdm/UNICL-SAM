@@ -35,7 +35,8 @@ model_lists = ['gpt', 'sam', 'vrp_qformer_sam', 'vrp_sam', 'vrp_sam_mul',
                'vrp_sam_dino_query_uncertainty_graph', 'vrp_sam_dino_uncertainty_graph_deterministic',
                'vrp_sam_dino_uncertainty_graph_deterministic_diff_attn',
                'vrp_sam_dino_uncertainty_graph_deterministic_reweight',
-               'vrp_sam_dino_uncertainty_graph_deterministic_contrastive']
+               'vrp_sam_dino_uncertainty_graph_deterministic_contrastive',
+               'vrp_sam_dino_uncertainty_graph_deterministic_contrastive_inst']
 
 data_lists = ['CVF', 'inpaint', 'color', 'caption', 'vp', 'seg', 'seg_class', 'sam_seg', 
               'sam_seg_imgiter', 'sam_seg_degrad_aug', 'sam_seg_cf', 'sam_seg_coconut', 
@@ -43,7 +44,8 @@ data_lists = ['CVF', 'inpaint', 'color', 'caption', 'vp', 'seg', 'seg_class', 's
               'mix_seg_vp', 'mix_seg_corrupt', 'vg', 'calibrate_vg', 'vg_bbox_text', 
               'vg_class', 'seg_vg', 'mix_seg_vg', 'mix_seg_vg-seg', 'sam_seg_cls', 
               'sam_seg_unoverlap', 'clip', 'cosine', 'degrad', 'scale', 
-              'sam_seg_semantic_degrad_contrastive', 'fss1000', 'lvis']
+              'sam_seg_semantic_degrad_contrastive', 'fss1000', 'lvis',
+              'davis', 'ytb', 'inst']
 
 def add_model_config_args(parser):
     """Model arguments"""

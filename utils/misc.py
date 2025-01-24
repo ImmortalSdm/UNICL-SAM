@@ -570,6 +570,8 @@ def get_model(args, config):
         model = ICL_VRP_SAM_DINO_VitDet_FPN_Uncertatinty_Deterministic_Reweight(config)
     elif model_type == 'vrp_sam_dino_uncertainty_graph_deterministic_contrastive':
         model = ICL_VRP_SAM_DINO_VitDet_FPN_Uncertatinty_Deterministic_Contrastive(config)
+    elif model_type == 'vrp_sam_dino_uncertainty_graph_deterministic_contrastive_inst':
+        model = ICL_VRP_SAM_DINO_VitDet_FPN_Uncertatinty_Deterministic_Contrastive_Inst(config)
     else:
         raise TypeError
 

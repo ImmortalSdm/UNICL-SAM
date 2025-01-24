@@ -1,6 +1,6 @@
 model:
   dinov2_config:
-    type: "/home/qchugroup/sdmcvpr2025/code/UNICL-SAM/ckpts/dinov2/large"
+    type: "/home/qchugroup/sdmcvpr2025/code/UNICL-SAM/ckpts//dinov2/large"
   fpn_config:
     out_channels: 1024
     multi_scale_fusion: 'bfp'
@@ -24,7 +24,7 @@ model:
     with_cluster_loss: true
     with_uncertainty_sampling: true
     with_uncertainty_reweighting: true
-    uncertainty_reweighting_type: 'rand' # 'topk'
+    uncertainty_reweighting_type: 'gate' # 'topk'
     uncertainty_topk_ratio: 0.75
     flow_config:
       flow_type: 'RealNVP'
@@ -48,8 +48,10 @@ model:
     hidden_act: "gelu"
   sam_config:
     type: 'vit_h'
-    ckpt: "/home/qchugroup/sdmcvpr2025/code/UNICL-SAM/ckpts/sam/sam_vit_h_4b8939.pth"
+    ckpt: "/home/qchugroup/sdmcvpr2025/code/UNICL-SAM/ckpts//sam/sam_vit_h_4b8939.pth"
     train_mask_decoder: false
+  use_cross_inst_prompt: true
+  use_inst_proj: true
   with_simple_fpn: true
   feat_interpolate: false
   with_mask: true
@@ -58,6 +60,7 @@ model:
   with_mlp_reweight: false
 loss:
   dice: 10
+  # tversky: 5
   ce: 20
   kl: 10
   un_ce: 1
@@ -67,7 +70,6 @@ loss:
     norm: 2
     beta: 1.0
     gamma: 0.001
-  ctr: 0.1
-  # tversky: 5
+  # ctr: 0.1
   # focal: 10
   # iou: 10

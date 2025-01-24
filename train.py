@@ -153,6 +153,29 @@ def get_train_dataset(args):
         dataset_val = FSS1000Dataset(split=args.split, shot=args.samples_num, data_set='coco', base_data_root='/home/qchugroup/sdmcvpr2025/datasets/coco', 
                                         use_split_coco=True, transform=image_transform, target_transform=mask_transform, 
                                         mode='val')
+    elif args.data_type == 'inst':
+        aug_inst = get_inst_aug(args.input_size)
+        aug_inst = DualAug([aug_inst])
+        image_transform = transforms.Compose([
+            transforms.Resize((args.input_size, args.input_size)),
+            transforms.ToTensor()])
+        mask_transform = transforms.Compose([
+            transforms.Resize((args.input_size, args.input_size)),
+            transforms.Grayscale(),
+            transforms.ToTensor()])
+        dataset_train = CustomConcatDataset([
+            SAMImgSegDataset(transform=image_transform, target_transform=mask_transform, size=args.input_size, is_train=True, dataset_name='coco_train'), 
+            SAMSegADEDataset(ADE_ROOT, transform=image_transform, target_transform=mask_transform, size=args.input_size, num_samples=args.samples_num, is_train=True),
+            SAMSegLVISDataset(LVIS_ROOT, transform=image_transform, target_transform=mask_transform, size=args.input_size, num_samples=args.samples_num, is_train=True),
+            InstCOCO(base_image_dir='/home/qchugroup/sdmcvpr2025/datasets/coco', transform=aug_inst, dataset_name='coco'),
+            InstCOCO(base_image_dir='/home/qchugroup/sdmcvpr2025/datasets/coco', transform=aug_inst, dataset_name='lvis')],
+            None, samples_per_epoch=None)
+        image_transform = transforms.Compose([
+            transforms.Resize((args.input_size, args.input_size)),
+            transforms.ToTensor()])
+        mask_transform = transforms.Compose([
+            transforms.Resize((args.input_size, args.input_size))])
+        dataset_val = DAVISTestDataset(data_root=DAVIS_ROOT, imset='2017/val.txt', transform=image_transform, target_transform=mask_transform)
     else:
         raise TypeError
 
@@ -210,6 +233,10 @@ def main(args):
             sampler_val = torch.utils.data.DistributedSampler(
                 dataset_val, num_replicas=num_tasks, rank=global_rank, shuffle=True
             )
+        elif args.data_type in ['inst']: 
+            sampler = torch.utils.data.DistributedSampler(dataset_train, shuffle=True)
+            sampler_train = torch.utils.data.BatchSampler(sampler, args.batch_size, drop_last=True)
+            sampler_val = torch.utils.data.DistributedSampler(dataset_val, shuffle=False)
         else:
             sampler_train = torch.utils.data.DistributedSampler(
                 dataset_train, num_replicas=num_tasks, rank=global_rank, shuffle=True
@@ -224,23 +251,40 @@ def main(args):
     log_dir = os.path.join(args.run_dir, 'log_dir')
     log_writer = SummaryWriter(log_dir)
 
-
-    data_loader_train = torch.utils.data.DataLoader(
-        dataset_train, sampler=sampler_train,
-        batch_size=args.batch_size,
-        num_workers=args.num_workers,
-        pin_memory=args.pin_mem,
-        drop_last=True,
-        persistent_workers=True
-    )
-    data_loader_val = torch.utils.data.DataLoader(
-        dataset_val, sampler=sampler_val,
-        batch_size=args.batch_size, # for sam
-        num_workers=args.num_workers, 
-        pin_memory=args.pin_mem,
-        drop_last=True,
-        persistent_workers=True
-    )
+    if args.data_type in ['inst']: 
+        data_loader_train = torch.utils.data.DataLoader(
+            dataset_train, batch_sampler=sampler_train,
+            num_workers=args.num_workers,
+            pin_memory=args.pin_mem,
+            collate_fn=custom_collate_fn,
+            persistent_workers=True
+        )
+        
+        data_loader_val = torch.utils.data.DataLoader(
+            dataset_val, sampler=sampler_val,
+            batch_size=1, # for sam
+            num_workers=args.num_workers, 
+            pin_memory=args.pin_mem,
+            drop_last=True,
+            persistent_workers=True
+        )   
+    else:
+        data_loader_train = torch.utils.data.DataLoader(
+            dataset_train, sampler=sampler_train,
+            batch_size=args.batch_size,
+            num_workers=args.num_workers,
+            pin_memory=args.pin_mem,
+            drop_last=True,
+            persistent_workers=True
+        )
+        data_loader_val = torch.utils.data.DataLoader(
+            dataset_val, sampler=sampler_val,
+            batch_size=args.batch_size, # for sam
+            num_workers=args.num_workers, 
+            pin_memory=args.pin_mem,
+            drop_last=True,
+            persistent_workers=True
+        )
 
     '''
     define the model
@@ -305,7 +349,10 @@ def main(args):
     start_time = time.time()
     for epoch in range(args.start_epoch, args.epochs):
         if args.distributed:
-            data_loader_train.sampler.set_epoch(epoch)
+            if args.data_type in ['inst']:
+                data_loader_train.batch_sampler.sampler.set_epoch(epoch)
+            else:
+                data_loader_train.sampler.set_epoch(epoch)
 
         train_stats = train_one_epoch(
             model, data_loader_train,

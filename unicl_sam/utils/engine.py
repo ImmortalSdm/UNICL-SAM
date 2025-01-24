@@ -138,6 +138,46 @@ def validate(model, data_loader, device, epoch, log_writer, args):
             metric_logger.update(**{'val_' + k: v for k, v in loss_data_dict.items()})
             del loss_dict
             # metric_logger.update(**{'val_' + k: v for k, v in loss_data_dict.items()})   
+    elif args.data_type in ['inst']:
+        import torchvision.transforms as transforms
+        from pathlib import Path
+        from PIL import Image
+        import time
+        from evaluate.evaluate_vos.vos_benchmark.benchmark import benchmark
+        from unicl_sam.data.vos_dataset import DAVIS_ROOT
+
+        for data_iter_step, batch in enumerate(metric_logger.log_every(data_loader, print_freq, header)):
+            with torch.cuda.amp.autocast():
+                output, n_inst = model(data=batch, infer=True, forward_vos=True, 
+                                       stage='train', 
+                                       logits_processor='softmax',
+                                       num_frame=4,
+                                       fix_first_frame=True,
+                                       fix_last_frame=False,
+                                       memory_decay_type='linear',
+                                       memory_decay_ratio=20)
+            
+            transform = transforms.Resize(batch['ori_inst_masks'].shape[-2:], interpolation=transforms.InterpolationMode.NEAREST)
+            
+            palette = Image.open(batch['mask_path'][0]).getpalette()
+            for i in range(len(output)):
+                ini_mask = transform(output[i])
+                mask = (ini_mask.max(1)[1] + 1) * ini_mask.max(1)[0]
+                out_img = Image.fromarray(mask[0].cpu().numpy().astype(np.uint8))
+                if palette is not None :
+                    out_img.putpalette(palette)
+                vid = batch['vid']
+                Path(os.path.join(args.run_dir, f'eval/{vid[0]}')).mkdir(parents=True, exist_ok=True)
+                out_img.save(os.path.join(args.run_dir, 'eval/{}/{}.png'.format(vid[0], str(i).zfill(5))))
+
+        torch.cuda.synchronize()
+        time.sleep(1) # force synch (PIL.Image)?
+        if misc.is_main_process():
+            vos_gt_root = DAVIS_ROOT + '/Annotations/480p/'
+            global_jf, global_j, global_f, *_ = benchmark([vos_gt_root], [os.path.join(args.run_dir, 'eval')], False, 16, verbose=True, skip_first_and_last=True)
+            metrics = {'J&F': global_jf[0], 'J': global_j[0], 'F': global_f[0]}
+
+            metric_logger.update(**{'val_' + k: v for k, v in metrics.items()})
     else:
         for data_iter_step, batch in enumerate(metric_logger.log_every(data_loader, print_freq, header)):
             with torch.cuda.amp.autocast():
@@ -158,7 +198,8 @@ def validate(model, data_loader, device, epoch, log_writer, args):
             del loss_dict, loss
 
     # gather the stats from all processes
-    metric_logger.synchronize_between_processes()
+    if args.data_type not in ['inst']:
+        metric_logger.synchronize_between_processes()
     print("Averaged stats for val:", metric_logger)
     eval_meter.write_result(header=header)
     return {k: meter.global_avg for k, meter in metric_logger.meters.items()}
