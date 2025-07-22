@@ -25,7 +25,7 @@ sh train.sh
 ## Evaluate UNICL-SAM
 Test with specific device, model and ckpt
 ```
-sh test.sh 9 EXP_DIR CKPT_PATH
+sh test.sh DEVICE EXP_DIR CKPT_PATH
 ```
 
 ## Acknowledgement
