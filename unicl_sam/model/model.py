@@ -20,7 +20,7 @@ loss_map = {
     'ce':Lisa_CELoss(),
     'dice':Lisa_DiceLoss(),
     'iou':IoULoss(),
-    'focal':FocalLoss('binary', 0.25),
+    'focal':FocalLoss('binary', 0.25), # type: ignore
     'tversky':TverskyLoss()
 }
 
@@ -44,12 +44,12 @@ class ICL_VRP_SAM_DINO_VitDet_FPN_Uncertatinty_Deterministic_Contrastive(nn.Modu
         else:
             self.vis_encoder = Dinov2Backbone.from_pretrained(config.model.dinov2_config.type)
 
-        for param in self.vis_encoder.parameters():
+        for param in self.vis_encoder.parameters(): # type: ignore
             param.requires_grad = False
 
         encoder_dim = config.model.fpn_config.out_channels
         if config.model.with_simple_fpn:
-            self.fpn = SimpleFeaturePyramid(self.vis_encoder.config.hidden_size, config.model.fpn_config.out_channels, (4.0, 2.0, 1.0, 0.5), norm=config.model.fpn_config.norm_type)
+            self.fpn = SimpleFeaturePyramid(self.vis_encoder.config.hidden_size, config.model.fpn_config.out_channels, (4.0, 2.0, 1.0, 0.5), norm=config.model.fpn_config.norm_type) # type: ignore
             if self.config.model.fpn_config.multi_scale_fusion == 'bfp':
                 self.bfp = BFP(encoder_dim, num_levels=4, refine_level=2, refine_type='non_local')
 
@@ -132,7 +132,7 @@ class ICL_VRP_SAM_DINO_VitDet_FPN_Uncertatinty_Deterministic_Contrastive(nn.Modu
         if model_type == 'dino':
             inputs = self.processor(images=sam_cropped_images, return_tensors="pt").to(self.SAM.device).to(torch.float16)
             # inputs = self.dinov2_transform[1](self.dinov2_transform[0].apply_image_torch(sam_cropped_images)).to(self.SAM.device).to(torch.float16)
-            outputs = self.vis_encoder(**inputs) # B, 3, 256, 256
+            outputs = self.vis_encoder(**inputs) # type: ignore # B, 3, 256, 256
 
             return outputs['feature_maps'][0]
         elif model_type == 'sam':
@@ -215,9 +215,9 @@ class ICL_VRP_SAM_DINO_VitDet_FPN_Uncertatinty_Deterministic_Contrastive(nn.Modu
             graph_data.append(data)
         
         if return_batch:
-            graph_data = Batch.from_data_list(graph_data).to(self.SAM.device)
+            graph_data = Batch.from_data_list(graph_data).to(self.SAM.device) # type: ignore
             if with_aug:
-                graph_aug_data = Batch.from_data_list(graph_aug_data).to(self.SAM.device)
+                graph_aug_data = Batch.from_data_list(graph_aug_data).to(self.SAM.device) # type: ignore
 
         if with_aug:
             return graph_data, graph_aug_data
@@ -342,7 +342,7 @@ class ICL_VRP_SAM_DINO_VitDet_FPN_Uncertatinty_Deterministic_Contrastive(nn.Modu
         
         if return_cluster_feats:
             max_cluster = torch.tensor([c.max() for c in clusters]).max()
-            clsuter_feats = torch.zeros([bsz, max_cluster, ch])
+            clsuter_feats = torch.zeros([bsz, max_cluster, ch]) # type: ignore
 
         for i in range(bsz):
             if with_graph_attn:
@@ -412,9 +412,9 @@ class ICL_VRP_SAM_DINO_VitDet_FPN_Uncertatinty_Deterministic_Contrastive(nn.Modu
             prob_support_feat_samples = torch.sigmoid(prob_support_feat_samples)
             uncertainty = prob_support_feat_samples.var(dim=1, keepdim=True).detach()
             if self.training:
-                uncertainty = F.conv2d(uncertainty, self.weight, padding=3, groups=1)
-                uncertainty = F.conv2d(uncertainty, self.weight, padding=3, groups=1)
-                uncertainty = F.conv2d(uncertainty, self.weight, padding=3, groups=1)
+                uncertainty = F.conv2d(uncertainty, self.weight.weight, padding=3, groups=1)
+                uncertainty = F.conv2d(uncertainty, self.weight.weight, padding=3, groups=1)
+                uncertainty = F.conv2d(uncertainty, self.weight.weight, padding=3, groups=1)
             uncertainty = (uncertainty - uncertainty.min()) / (uncertainty.max() - uncertainty.min())
             residual *= (1 - uncertainty)
             if self.training:
@@ -432,7 +432,7 @@ class ICL_VRP_SAM_DINO_VitDet_FPN_Uncertatinty_Deterministic_Contrastive(nn.Modu
                                            return_batch=True)
 
             pred = self.uncertainty_GCN(graph_data)
-            loss = self.uncertainty_GCN.loss(pred, graph_data)
+            loss = self.uncertainty_GCN.loss(pred, graph_data) # type: ignore
 
             if self.config.model.uncertainty_config.with_aug:
                 graph_aug_data = self.get_aug_graph(pred, graph_data, self.config.model.uncertainty_config.with_uncertainty_sampling)

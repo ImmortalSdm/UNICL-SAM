@@ -2,38 +2,7 @@ device=$1
 path=$2
 epoch=$3
 
-# caicl
-for num_sample in 1 2 3;
-do
-    if [ $num_sample -eq 1 ]; then
-        CUDA_VISIBLE_DEVICES=${device} python test.py \
-        -cfg ${path}/config.yaml \
-        -pt ${path}/checkpoint-${epoch}.pth \
-        -d sam_seg \
-        -s 518 \
-        -b 4 \
-        -val "test_sam_seg_sample-num-${num_sample}" \
-        -n ${num_sample} \
-        -id "configs/test/caicl_seg_3w_num_${num_sample}_id.json" \
-        --uncertainty_vis True \
-        --save_attn True \
-        --cluster_vis True \
-        
-    else
-        CUDA_VISIBLE_DEVICES=${device} python test.py \
-        -cfg ${path}/config.yaml \
-        -pt ${path}/checkpoint-${epoch}.pth \
-        -d sam_seg \
-        -s 518 \
-        -b 4 \
-        -val "test_sam_seg_sample-num-${num_sample}" \
-        -n ${num_sample} \
-        -id "configs/test/caicl_seg_3w_num_${num_sample}_id.json" \
-        # --iou_pred True
-    fi
-done
-
-# # coco-20i
+# coco-20i
 for split in 0 1 2 3;
 do
     CUDA_VISIBLE_DEVICES=${device} python test.py \

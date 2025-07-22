@@ -10,3 +10,5 @@ ckpts/
 output/
 cvpr_pics/
 *.log
+.history/
+.vscode/

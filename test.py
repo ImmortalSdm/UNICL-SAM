@@ -205,7 +205,7 @@ def generate_sam_img(model, data, device, num, args):
 
 def get_test_dataset(args):
 
-    if args.data_type == 'sam_seg':
+    if args.data_type == 'lvis':
         image_transform = transforms.Compose([
             transforms.Resize((args.input_size, args.input_size)),
             transforms.ToTensor()])
@@ -213,22 +213,6 @@ def get_test_dataset(args):
             transforms.Resize((args.input_size, args.input_size)),
             transforms.Grayscale(3),
             transforms.ToTensor()])
-        val_file = "/home/qchugroup/sdmcvpr2025/datasets/coco/annotations/val_seg_3w.json"
-        # val_file = "/home/qchugroup/sdmcvpr2025/datasets/coco/annotations/val_seg_no_small_3w.json"
-        # val_file = "/home/qchugroup/sdmcvpr2025/datasets/coco/annotations/val_gtav_seg_3w.json"
-        # val_file = "/home/qchugroup/sdmcvpr2025/datasets/coco/annotations/val_sd_context_seg_3w.json"
-        # val_file = "/home/qchugroup/sdmcvpr2025/datasets/coco/annotations/val_sd_coco_seg_3w.json"
-        dataset_val = SAMSegDataset(COCO_ROOT_VAL, val_file, transform=image_transform, target_transform=mask_transform, num_samples=args.samples_num, size=args.input_size, mode='test', test_ids=args.test_ids)
-        # dataset_val = SAMSegGenerationDataset(COCO_ROOT_VAL, val_file, transform=image_transform, target_transform=mask_transform, num_samples=args.samples_num, size=args.input_size)
-    elif args.data_type == 'lvis':
-        image_transform = transforms.Compose([
-            transforms.Resize((args.input_size, args.input_size)),
-            transforms.ToTensor()])
-        mask_transform = transforms.Compose([
-            transforms.Resize((args.input_size, args.input_size)),
-            transforms.Grayscale(3),
-            transforms.ToTensor()])
-        val_file = "/home/qchugroup/sdmcvpr2025/datasets/coco/annotations/lvis_img100_seg_train.json"
         dataset_val = SAMSegLVISDataset(LVIS_ROOT, LVIS_SEG_ANN_VAL, transform=image_transform, target_transform=mask_transform, num_samples=args.samples_num, size=args.input_size, fold=args.split, is_train=False)  
     elif args.data_type in ['fss', 'mix_fss']:
         image_transform = transforms.Compose([
@@ -238,9 +222,6 @@ def get_test_dataset(args):
             transforms.Resize((args.input_size, args.input_size)),
             transforms.Grayscale(3),
             transforms.ToTensor()])
-        # dataset_val = MyFSSCOCOFDataset(split=args.split, shot=args.samples_num, data_set='coco', base_data_root='/home/qchugroup/sdmcvpr2025/datasets/coco', 
-        #                                 use_split_coco=True, transform=image_transform, target_transform=mask_transform, 
-        #                                 mode='val')
         dataset_val = FSSCOCODataset(datapath='/home/qchugroup/sdmcvpr2025/datasets/coco', fold=args.split, split='test', shot=args.samples_num, transform=image_transform, target_transform=mask_transform)
     elif args.data_type in ['fss1000']:
         image_transform = transforms.Compose([
@@ -250,7 +231,6 @@ def get_test_dataset(args):
             transforms.Resize((args.input_size, args.input_size)),
             transforms.Grayscale(3),
             transforms.ToTensor()])
-        # dataset_val = FSS1000Dataset(shot=args.samples_num, size=args.input_size, base_data_root='/home/qchugroup/sdmcvpr2025/datasets/fss-1000', transform=image_transform, target_transform=mask_transform)
         dataset_val = FSS1000Dataset(base_data_root='/home/qchugroup/sdmcvpr2025/datasets/fss-1000', transform=image_transform, target_transform=mask_transform)
     else:
         raise TypeError
