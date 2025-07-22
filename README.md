@@ -11,7 +11,7 @@
 ```
 conda create --name unicl-sam python=3.10 -y
 conda activate unicl-sam
-pip install torch==2.1.0+cu118 torchvision==0.16.0+cu118 torchaudio==2.1.0+cu118 --extra-index-url https://download.pytorch.org/whl/cu117
+pip install torch==2.1.0 torchvision==0.16.0 torchaudio==2.1.0 --index-url https://download.pytorch.org/whl/cu118
 pip install -r requirements.txt
 ```
 
